@@ -1,13 +1,14 @@
 package org.be._9oormthonuniv.domain.user.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // 생성자의 접근 제어자를 protected로 설정
 @Table(name = "users")
 public class User {
     @Id
