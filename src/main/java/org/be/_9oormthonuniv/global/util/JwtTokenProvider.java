@@ -1,4 +1,4 @@
-package org.be._9oormthonuniv.domain.user.config;
+package org.be._9oormthonuniv.global.util;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

@@ -1,7 +1,7 @@
 package org.be._9oormthonuniv.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.be._9oormthonuniv.domain.user.config.JwtTokenProvider;
+import org.be._9oormthonuniv.global.util.JwtTokenProvider;
 import org.be._9oormthonuniv.domain.user.dto.LoginRequest;
 import org.be._9oormthonuniv.domain.user.dto.SignupRequest;
 import org.be._9oormthonuniv.domain.user.entity.User;

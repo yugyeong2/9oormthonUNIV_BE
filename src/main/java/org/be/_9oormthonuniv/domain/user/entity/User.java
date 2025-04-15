@@ -16,8 +16,10 @@ public class User {
     private Long id;
 
     @Column(nullable = false)
-    private String password;
     private String username;
+
+    @Column(nullable = false)
+    private String password;
 
     @Builder
     public User(String username, String password) {

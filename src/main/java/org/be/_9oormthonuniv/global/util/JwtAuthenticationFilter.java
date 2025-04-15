@@ -1,4 +1,4 @@
-package org.be._9oormthonuniv.domain.user.config;
+package org.be._9oormthonuniv.global.util;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
