@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration // 설정 클래스로 인식
 @EnableWebSecurity // Spring Security 활성화
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(withDefaults()) // CORS 허용
                 .csrf(AbstractHttpConfigurer::disable) // CSRF 비활성화 (REST API에서는 일반적으로 꺼둠)
                 .sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 사용하지 않도록 설정 (JWT는 무상태)
                 .authorizeHttpRequests(auth -> auth // 요청별 인증/인가 설정
