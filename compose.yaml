@@ -1,0 +1,50 @@
+services:
+  # MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_9oormthonuniv_be
+    restart: always # 컨테이너가 중단되었을 때 자동으로 재시작
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mysql9
+      MYSQL_USER: user9
+      MYSQL_PASSWORD: password9
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - network_9oormthonuniv_be
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uuser9", "-ppassword9" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot
+  backend:
+    build: .
+    container_name: spring_boot_9oormthonuniv_be
+    restart: always
+    ports:
+      - "8089:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql_9oormthonuniv_be:3306/mysql9
+      SPRING_DATASOURCE_USERNAME: user9
+      SPRING_DATASOURCE_PASSWORD: password9
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
+      APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - network_9oormthonuniv_be
+
+networks:
+  network_9oormthonuniv_be:
+    driver: bridge
+
+volumes:
+  mysql_data:
