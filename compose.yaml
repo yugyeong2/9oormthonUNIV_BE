@@ -4,11 +4,13 @@ services:
     image: mysql:8.0
     container_name: mysql_9oormthonuniv_be
     restart: always # 컨테이너가 중단되었을 때 자동으로 재시작
+    env_file:
+      - .env
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: mysql9
-      MYSQL_USER: user9
-      MYSQL_PASSWORD: password9
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     ports:
       - "3309:3306"
     volumes:
@@ -28,10 +30,13 @@ services:
     restart: always
     ports:
       - "8089:8080"
+    env_file:
+      - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql_9oormthonuniv_be:3306/mysql9
-      SPRING_DATASOURCE_USERNAME: user9
-      SPRING_DATASOURCE_PASSWORD: password9
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka_9oormthonuniv_be:9092
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -39,6 +44,63 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - network_9oormthonuniv_be
+
+  # Kafka (KRaft 모드로 실행)
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka_9oormthonuniv_be
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_KRAFT_CLUSTER_ID=kraft-cluster-01 # KRaft 클러스터의 고유 ID
+      - KAFKA_CFG_KRAFT_MODE=true # ZooKeeper 없이 KRaft 모드로 실행
+
+      - KAFKA_BROKER_ID=1 # 브로커 ID (각 노드마다 고유해야 함)
+      - KAFKA_CFG_NODE_ID=1 # KRaft 모드에서 사용되는 노드 고유 ID
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller # 노드 역할 (브로커 + 컨트롤러)
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER # 컨트롤러 리스너 이름 설정
+      - KAFKA_CFG_CLUSTER_ID=kraft-cluster-01 # 클러스터 ID (초기 생성 시 필요)
+      - KAFKA_CFG_LOG_DIRS=/bitnami/kafka/data # Kafka 로그 저장 디렉토리
+
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9094 # Kafka 리스너 포트 설정 (클라이언트 및 컨트롤러용)
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka_9oormthonuniv_be:9092 # 브로커가 외부에 알리는 주소 (클러스터 내 통신용)
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT # 리스너별 프로토콜 정의
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka_9oormthonuniv_be:9094 # 컨트롤러 선출을 위한 투표 노드 지정
+
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1 # __consumer_offsets 토픽 복제 계수 (단일 노드 환경에선 1)
+      - ALLOW_PLAINTEXT_LISTENER=yes # 암호화 없이 PLAINTEXT 연결 허용 (개발용)
+    volumes:
+      - kafka_data:/bitnami/kafka
+    command: >
+      bash -c "
+        if [ ! -f /bitnami/kafka/data/meta.properties ]; then
+          /opt/bitnami/kafka/bin/kafka-storage.sh format -t kraft-cluster-01 -c /opt/bitnami/kafka/config/kraft/server.properties
+        fi && /opt/bitnami/scripts/kafka/entrypoint.sh /opt/bitnami/scripts/kafka/run.sh
+      "
+    networks:
+      - network_9oormthonuniv_be
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka UI (Provectus)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui_9oormthonuniv_be
+    ports:
+      - "8088:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka_9oormthonuniv_be:9092
     networks:
       - network_9oormthonuniv_be
 
@@ -48,3 +110,4 @@ networks:
 
 volumes:
   mysql_data:
+  kafka_data:
